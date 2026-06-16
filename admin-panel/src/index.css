@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-armyGreen: #228B22; /* Vibrant leaf green from logo */
+  --color-saffron: #FFA500;   /* Yellow/Orange from logo shield */
+  --color-primaryRed: #E50000; /* Red from logo ribbon */
+}
+
+@layer base {
+  body {
+    background-color: #f9fafb; /* gray-50 */
+    color: #111827; /* gray-900 */
+  }
+}
