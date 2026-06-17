@@ -5,45 +5,70 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/glassy_background.dart';
 import '../../core/widgets/glassy_container.dart';
 import '../../data/services/api_service.dart';
-import '../home/home_screen.dart';
-import 'login_screen.dart';
+import '../../data/models/user_model.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+class BillingInfoScreen extends StatefulWidget {
+  final UserModel user;
+
+  const BillingInfoScreen({Key? key, required this.user}) : super(key: key);
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<BillingInfoScreen> createState() => _BillingInfoScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  
-  // Billing Controllers
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _street1Controller = TextEditingController();
-  final _street2Controller = TextEditingController();
-  final _street3Controller = TextEditingController();
-  final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
-  final _zipController = TextEditingController();
-  final _countryController = TextEditingController(text: 'United States');
-  final _panController = TextEditingController();
-  
-  String _howHeard = 'Please select one';
-  bool _keepUpdated = true;
-  bool _donateAnonymously = false;
-  bool _isLoading = false;
+class _BillingInfoScreenState extends State<BillingInfoScreen> {
+  final ApiService _apiService = ApiService();
+  bool _isSaving = false;
+
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _street1Controller;
+  late TextEditingController _street2Controller;
+  late TextEditingController _street3Controller;
+  late TextEditingController _cityController;
+  late TextEditingController _stateController;
+  late TextEditingController _zipController;
+  late TextEditingController _countryController;
+  late TextEditingController _panController;
+
+  late String _howHeard;
+  late bool _keepUpdated;
+  late bool _donateAnonymously;
+
+  @override
+  void initState() {
+    super.initState();
+    final info = widget.user.billingInfo;
+    
+    // Split full name if billing name is empty as fallback
+    String initFirst = info.firstName;
+    String initLast = info.lastName;
+    if (initFirst.isEmpty && initLast.isEmpty && widget.user.name.isNotEmpty) {
+      final parts = widget.user.name.split(' ');
+      initFirst = parts.first;
+      if (parts.length > 1) {
+        initLast = parts.sublist(1).join(' ');
+      }
+    }
+
+    _firstNameController = TextEditingController(text: initFirst);
+    _lastNameController = TextEditingController(text: initLast);
+    _street1Controller = TextEditingController(text: info.street1);
+    _street2Controller = TextEditingController(text: info.street2);
+    _street3Controller = TextEditingController(text: info.street3);
+    _cityController = TextEditingController(text: info.city);
+    _stateController = TextEditingController(text: info.state);
+    _zipController = TextEditingController(text: info.zipCode);
+    _countryController = TextEditingController(text: info.country.isEmpty ? 'United States' : info.country);
+    _panController = TextEditingController(text: info.panCard);
+
+    _howHeard = info.howHeard.isEmpty ? 'Please select one' : info.howHeard;
+    _keepUpdated = info.keepUpdated;
+    _donateAnonymously = info.donateAnonymously;
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _street1Controller.dispose();
@@ -57,13 +82,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _register() async {
-    // Basic validation
+  void _saveChanges() async {
     if (_firstNameController.text.trim().isEmpty ||
         _lastNameController.text.trim().isEmpty ||
-        _emailController.text.trim().isEmpty ||
-        _phoneController.text.trim().isEmpty ||
-        _passwordController.text.isEmpty ||
         _street1Controller.text.trim().isEmpty ||
         _cityController.text.trim().isEmpty ||
         _stateController.text.trim().isEmpty ||
@@ -75,14 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
-      return;
-    }
-
-    setState(() { _isLoading = true; });
+    setState(() { _isSaving = true; });
 
     final billingInfo = {
       'firstName': _firstNameController.text.trim(),
@@ -100,25 +114,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       'donateAnonymously': _donateAnonymously,
     };
 
-    final apiService = ApiService();
-    final error = await apiService.register(
-      "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
-      _emailController.text.trim(),
-      _phoneController.text.trim(),
-      _passwordController.text,
-      billingInfo,
+    // Update name to reflect changes in billing first/last name
+    final newFullName = "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}";
+
+    final updated = await _apiService.updateProfile(
+      name: newFullName,
+      billingInfo: billingInfo,
     );
 
-    setState(() { _isLoading = false; });
+    setState(() { _isSaving = false; });
 
-    if (error == null && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+    if (updated != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Billing information updated successfully!'), backgroundColor: Colors.green),
       );
+      Navigator.pop(context);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Registration failed')),
+        const SnackBar(content: Text('Failed to update billing info. Please try again.'), backgroundColor: Colors.red),
       );
     }
   }
@@ -129,12 +142,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     bool required = false,
     TextInputType keyboardType = TextInputType.text,
-    bool obscureText = false,
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextField(
       controller: controller,
-      obscureText: obscureText,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
       style: const TextStyle(color: AppColors.textDarkBlue, fontWeight: FontWeight.w600),
@@ -166,7 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Register', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue)),
+        title: const Text('Billing Information', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: ClipRect(
@@ -186,60 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 10),
                 
-                // Logo in circle
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.8),
-                        width: 3,
-                      ),
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/logo.jpg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(duration: 800.ms).scale(delay: 100.ms, duration: 600.ms, curve: Curves.easeOutBack),
-                
-                const SizedBox(height: 16),
-                
-                const Text(
-                  'Join Army Trust',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBlue,
-                  ),
-                ).animate().fadeIn(delay: 150.ms, duration: 500.ms).slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
-                
-                const SizedBox(height: 6),
-                
-                const Text(
-                  'Fill in your details to create a new profile',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
-                
-                const SizedBox(height: 24),
-                
-                // Glassy Card
+                // Form Card
                 GlassyContainer(
                   padding: const EdgeInsets.all(20.0),
                   opacity: 0.12,
@@ -248,12 +206,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Text(
-                        'Account Information',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+                        'Edit Billing Address',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
 
-                      // First Name & Last Name in a Row
+                      // First & Last Name
                       Row(
                         children: [
                           Expanded(
@@ -278,57 +236,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
                       
-                      const SizedBox(height: 14),
-                      
-                      // Phone
-                      _buildTextField(
-                        controller: _phoneController,
-                        label: 'Mobile Number',
-                        icon: Icons.phone_outlined,
-                        required: true,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      
-                      const SizedBox(height: 14),
-                      
-                      // Email
-                      _buildTextField(
-                        controller: _emailController,
-                        label: 'Email Address',
-                        icon: Icons.email_outlined,
-                        required: true,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      
-                      const SizedBox(height: 14),
-                      
-                      // Password
-                      _buildTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        icon: Icons.lock_outline,
-                        required: true,
-                        obscureText: true,
-                      ),
-                      
-                      const SizedBox(height: 14),
-                      
-                      // Confirm Password
-                      _buildTextField(
-                        controller: _confirmPasswordController,
-                        label: 'Confirm Password',
-                        icon: Icons.lock_outline,
-                        required: true,
-                        obscureText: true,
-                      ),
-
-                      const SizedBox(height: 24),
-                      
-                      // Billing Information Section
-                      const Text(
-                        'Billing Information (For 80G Receipts)',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
-                      ),
                       const SizedBox(height: 14),
 
                       // Street 1
@@ -384,7 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       
                       const SizedBox(height: 14),
 
-                      // ZIP/Postal Code
+                      // ZIP Code
                       _buildTextField(
                         controller: _zipController,
                         label: 'ZIP/Postal Code',
@@ -405,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       
                       const SizedBox(height: 14),
 
-                      // PAN Card (Optional, but useful for 80G benefit)
+                      // PAN Card
                       _buildTextField(
                         controller: _panController,
                         label: 'PAN Card (For Indian 80G tax benefit)',
@@ -495,9 +402,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       
                       const SizedBox(height: 24),
                       
-                      // Register Button
+                      // Save Changes Button
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _register,
+                        onPressed: _isSaving ? null : _saveChanges,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.saffron,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -505,14 +412,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           elevation: 4,
                           shadowColor: AppColors.saffron.withOpacity(0.3),
                         ),
-                        child: _isLoading 
+                        child: _isSaving 
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                               ) 
                             : const Text(
-                                'Register',
+                                'Save Changes',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -523,43 +430,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
                   ),
-                ).animate().fadeIn(delay: 300.ms, duration: 800.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
-                
-                const SizedBox(height: 20),
-                
-                // Link to Login Screen in case they are first launch but already have an account
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                    child: RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 14, fontFamily: 'Inter'),
-                        children: [
-                          TextSpan(
-                            text: "Already have an account? ",
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                          TextSpan(
-                            text: "Login Here",
-                            style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 500.ms, duration: 600.ms),
+                ).animate().fadeIn(delay: 100.ms, duration: 600.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOutCubic),
                 const SizedBox(height: 40),
               ],
             ),
@@ -569,4 +440,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-

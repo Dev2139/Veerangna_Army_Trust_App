@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/glassy_container.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 
 class FaqScreen extends StatelessWidget {
   const FaqScreen({Key? key}) : super(key: key);
@@ -30,34 +33,55 @@ class FaqScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('FAQ', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.armyGreen,
+        title: const Text('FAQ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: AppColors.primaryBlue.withOpacity(0.65),
         elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 100.0),
         itemCount: faqs.length,
         itemBuilder: (context, index) {
-          return Card(
+          return GlassyContainer(
             margin: const EdgeInsets.only(bottom: 12.0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ExpansionTile(
-              title: Text(
-                faqs[index]['question']!,
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.armyGreen),
-              ),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Text(
-                    faqs[index]['answer']!,
-                    style: const TextStyle(color: Colors.black87, height: 1.5),
-                  ),
+            color: Colors.white,
+            opacity: 0.08,
+            borderRadius: BorderRadius.circular(16),
+            child: Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                iconColor: AppColors.primaryBlue,
+                collapsedIconColor: Colors.grey,
+                title: Text(
+                  faqs[index]['question']!,
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
                 ),
-              ],
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Text(
+                      faqs[index]['answer']!,
+                      style: const TextStyle(color: Colors.black87, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ).animate(
+            onPlay: (controller) => controller.repeat(reverse: true),
+            delay: (index * 150).ms,
+          ).slideY(
+            begin: 0,
+            end: -0.015,
+            duration: (2200 + (index * 200)).ms,
+            curve: Curves.easeInOut,
           );
         },
       ),

@@ -12,10 +12,15 @@ import '../about/about_screen.dart';
 import '../faq/faq_screen.dart';
 import '../food_donate/food_donate_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../account_details/account_details_screen.dart';
+import '../legal_documents/legal_documents_screen.dart';
 import '../../data/models/banner_model.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../core/widgets/glassy_container.dart';
+import '../../core/widgets/glassy_background.dart';
+import 'dart:ui';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -88,47 +93,57 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 2) {
-            _markAllAsSeen();
-          }
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        selectedItemColor: AppColors.armyGreen,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          const BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: 'FAQ'),
-          BottomNavigationBarItem(
-            icon: Stack(
-              children: [
-                const Icon(Icons.notifications),
-                if (_unreadCount > 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
+      backgroundColor: Colors.transparent,
+      body: GlassyBackground(
+        child: _screens[_currentIndex],
+      ),
+      extendBody: true,
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: BottomNavigationBar(
+            backgroundColor: Colors.white.withOpacity(0.65),
+            elevation: 0,
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              if (index == 2) {
+                _markAllAsSeen();
+              }
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            selectedItemColor: AppColors.primaryBlue,
+            unselectedItemColor: Colors.grey,
+            type: BottomNavigationBarType.fixed,
+            items: [
+              const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              const BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: 'FAQ'),
+              BottomNavigationBarItem(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.notifications),
+                    if (_unreadCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(minWidth: 10, minHeight: 10),
+                        ),
                       ),
-                      constraints: const BoxConstraints(minWidth: 10, minHeight: 10),
-                    ),
-                  ),
-              ],
-            ),
-            label: 'Notifications',
+                  ],
+                ),
+                label: 'Notifications',
+              ),
+              const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            ],
           ),
-          const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+        ),
       ),
     );
   }
@@ -156,6 +171,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Row(
           children: [
@@ -164,11 +180,17 @@ class _HomeViewState extends State<HomeView> {
               child: Image.network('https://res.cloudinary.com/dsddldquo/image/upload/v1781593109/tsrwudiwazhmwm78oa4g.jpg', height: 32, width: 32, fit: BoxFit.cover),
             ),
             const SizedBox(width: 8),
-            const Text('Army Trust', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Army Trust', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
           ],
         ),
-        backgroundColor: AppColors.armyGreen,
+        backgroundColor: AppColors.primaryBlue.withOpacity(0.65),
         elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -179,8 +201,8 @@ class _HomeViewState extends State<HomeView> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
+                    baseColor: Colors.grey[300]!.withOpacity(0.5),
+                    highlightColor: Colors.grey[100]!.withOpacity(0.5),
                     child: Container(height: 180, width: double.infinity, color: Colors.white),
                   );
                 }
@@ -207,10 +229,13 @@ class _HomeViewState extends State<HomeView> {
                 ).animate().fade(duration: 500.ms).slideY(begin: -0.1, end: 0, curve: Curves.easeOut);
               }
             ),
+            const SizedBox(height: 20),
+            _buildSuccessStoryCard(),
+            const SizedBox(height: 20),
             
             const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Featured Campaigns', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text('Our Causes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
             ).animate().fade(delay: 200.ms).slideX(begin: -0.1),
             
             FutureBuilder<List<CampaignModel>>(
@@ -218,8 +243,8 @@ class _HomeViewState extends State<HomeView> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
+                    baseColor: Colors.grey[300]!.withOpacity(0.5),
+                    highlightColor: Colors.grey[100]!.withOpacity(0.5),
                     child: Container(
                       height: 380,
                       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -246,9 +271,9 @@ class _HomeViewState extends State<HomeView> {
                     CarouselSlider.builder(
                       itemCount: campaigns.length,
                       options: CarouselOptions(
-                        height: 380,
+                        height: 440,
                         autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 4),
+                        autoPlayInterval: const Duration(seconds: 5),
                         enlargeCenterPage: true,
                         viewportFraction: 0.85,
                       ),
@@ -257,10 +282,15 @@ class _HomeViewState extends State<HomeView> {
                         final progress = campaign.amountRequired > 0 
                             ? campaign.amountCollected / campaign.amountRequired 
                             : 0.0;
+                        final percent = (progress * 100).toInt();
+
+                        // Cycle through campaign colors
+                        final colors = [AppColors.campaignPurple, AppColors.primaryBlue, AppColors.campaignOrange];
+                        final cardColor = colors[index % colors.length];
 
                         return GestureDetector(
                           onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => CampaignDetailsScreen(
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => CampaignDetailsScreen(
                               campaignId: campaign.id,
                               title: campaign.title,
                               collected: campaign.amountCollected,
@@ -268,72 +298,99 @@ class _HomeViewState extends State<HomeView> {
                               imageUrl: campaign.images.isNotEmpty ? campaign.images.first : '',
                             )));
                           },
-                          child: Card(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[300],
-                                        borderRadius: BorderRadius.circular(8),
-                                        image: campaign.images.isNotEmpty ? DecorationImage(
-                                          image: NetworkImage(campaign.images.first),
-                                          fit: BoxFit.cover,
-                                        ) : null,
-                                      ),
-                                      child: campaign.images.isEmpty ? const Center(child: Icon(Icons.image, size: 48, color: Colors.grey)) : null,
-                                    ),
+                          child: GlassyContainer(
+                            color: Colors.white,
+                            opacity: 0.12,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                  child: Container(
+                                    height: 180,
+                                    width: double.infinity,
+                                    color: Colors.white.withOpacity(0.05),
+                                    child: campaign.images.isNotEmpty ? Image.network(
+                                      campaign.images.first,
+                                      fit: BoxFit.cover,
+                                    ) : const Center(child: Icon(Icons.image, size: 48, color: Colors.grey)),
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    campaign.title,
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  LinearProgressIndicator(
-                                    value: progress.clamp(0.0, 1.0),
-                                    backgroundColor: Colors.grey[200],
-                                    color: AppColors.saffron,
-                                    minHeight: 8,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Flexible(
-                                        child: Text(
-                                          '₹ ${campaign.amountCollected} raised', 
-                                          style: const TextStyle(color: AppColors.armyGreen, fontWeight: FontWeight.bold),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                      Text(
+                                        campaign.title,
+                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.push(context, MaterialPageRoute(builder: (_) => CampaignDetailsScreen(
-                                            campaignId: campaign.id,
-                                            title: campaign.title,
-                                            collected: campaign.amountCollected,
-                                            required: campaign.amountRequired,
-                                            imageUrl: campaign.images.isNotEmpty ? campaign.images.first : '',
-                                          )));
-                                        },
-                                        child: const Text('Contribute', style: TextStyle(color: AppColors.saffron)),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'We provide support to those in need to create long-term positive change and build a brighter future.',
+                                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      LinearProgressIndicator(
+                                        value: progress.clamp(0.0, 1.0),
+                                        backgroundColor: cardColor.withOpacity(0.2),
+                                        color: cardColor,
+                                        minHeight: 6,
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Raised: ₹${campaign.amountCollected} / ₹${campaign.amountRequired}', 
+                                            style: const TextStyle(fontSize: 11, color: Colors.black54),
+                                          ),
+                                          Text('Progress: $percent%', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (_) => CampaignDetailsScreen(
+                                              campaignId: campaign.id,
+                                              title: campaign.title,
+                                              collected: campaign.amountCollected,
+                                              required: campaign.amountRequired,
+                                              imageUrl: campaign.images.isNotEmpty ? campaign.images.first : '',
+                                            )));
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: cardColor,
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                            elevation: 0,
+                                          ),
+                                          child: const Text('DONATE NOW ↗', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                                        )
                                       )
                                     ],
-                                  )
-                                ],
-                              ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ).animate(delay: Duration(milliseconds: 300 + (index * 100))).fade().scale(begin: const Offset(0.95, 0.95));
+                        ).animate(
+                          onPlay: (controller) => controller.repeat(reverse: true),
+                          delay: (index * 150).ms,
+                        ).slideY(
+                          begin: 0,
+                          end: -0.015,
+                          duration: (2200 + (index * 200)).ms,
+                          curve: Curves.easeInOut,
+                        );
                       },
                     ),
 
@@ -342,7 +399,7 @@ class _HomeViewState extends State<HomeView> {
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          Text('Explore', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text('Explore', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
                         ],
                       ),
                     ),
@@ -357,15 +414,17 @@ class _HomeViewState extends State<HomeView> {
                         crossAxisSpacing: 12,
                         childAspectRatio: 1.2,
                         children: [
-                          _buildExploreCard(context, 'Food Donate', Icons.volunteer_activism, const FoodDonateScreen()),
-                          _buildExploreCard(context, 'Events', Icons.event, const EventsScreen()),
-                          _buildExploreCard(context, 'Gallery', Icons.photo_library, const GalleryScreen()),
-                          _buildExploreCard(context, 'News', Icons.newspaper, const NewsFeedScreen()),
-                          _buildExploreCard(context, 'About', Icons.info_outline, const AboutScreen()),
+                          _buildExploreCard(context, 'Food Donate', Icons.volunteer_activism, const FoodDonateScreen(), 0),
+                          _buildExploreCard(context, 'Account Details', Icons.account_balance, const AccountDetailsScreen(), 1),
+                          _buildExploreCard(context, 'Legal Documents', Icons.article, const LegalDocumentsScreen(), 2),
+                          _buildExploreCard(context, 'Events', Icons.event, const EventsScreen(), 3),
+                          _buildExploreCard(context, 'Gallery', Icons.photo_library, const GalleryScreen(), 4),
+                          _buildExploreCard(context, 'News', Icons.newspaper, const NewsFeedScreen(), 5),
+                          _buildExploreCard(context, 'About', Icons.info_outline, const AboutScreen(), 6),
                         ],
                       ),
-                    ).animate().fade(delay: 600.ms).slideY(begin: 0.1),
-                    const SizedBox(height: 40),
+                    ).animate().fade(delay: 400.ms).slideY(begin: 0.1),
+                    const SizedBox(height: 100), // extra padding for extendBody BottomNavigationBar
                   ],
                 );
               }
@@ -376,23 +435,96 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildExploreCard(BuildContext context, String title, IconData icon, Widget screen) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-      },
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
+  Widget _buildExploreCard(BuildContext context, String title, IconData icon, Widget screen, int index) {
+    bool isPressed = false;
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return GestureDetector(
+          onTapDown: (_) => setState(() => isPressed = true),
+          onTapUp: (_) => setState(() => isPressed = false),
+          onTapCancel: () => setState(() => isPressed = false),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+          },
+          child: AnimatedScale(
+            scale: isPressed ? 0.94 : 1.0,
+            duration: 100.ms,
+            child: GlassyContainer(
+              borderRadius: BorderRadius.circular(16),
+              opacity: 0.08,
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 36, color: AppColors.primaryBlue),
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDarkBlue),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    ).animate(
+      onPlay: (controller) => controller.repeat(reverse: true),
+      delay: (index * 80).ms,
+    ).slideY(
+      begin: 0,
+      end: -0.02,
+      duration: (2000 + (index * 150)).ms,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildSuccessStoryCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: GlassyContainer(
+        padding: const EdgeInsets.all(24),
+        color: Colors.white,
+        opacity: 0.08,
+        borderRadius: BorderRadius.circular(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 40, color: AppColors.armyGreen),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.primaryBlue.withOpacity(0.4)),
+                borderRadius: BorderRadius.circular(20),
+                color: AppColors.primaryBlue.withOpacity(0.05),
+              ),
+              child: const Text('SUCCESS STORY', style: TextStyle(color: AppColors.primaryBlue, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Changing lives through compassion & action',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDarkBlue,
+                height: 1.2,
+              ),
+            ),
             const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Text(
+              'We work tirelessly to uplift underprivileged communities through food support, education, healthcare, and basic necessities.',
+              style: TextStyle(fontSize: 14, color: Colors.black54),
+            ),
           ],
         ),
       ),
+    ).animate(
+      onPlay: (controller) => controller.repeat(reverse: true),
+    ).slideY(
+      begin: 0,
+      end: -0.015,
+      duration: 3.seconds,
+      curve: Curves.easeInOut,
     );
   }
 }

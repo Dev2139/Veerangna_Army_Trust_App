@@ -4,9 +4,12 @@ import '../../data/services/api_service.dart';
 import '../../data/models/user_model.dart';
 import '../auth/login_screen.dart';
 import 'certificate_screen.dart';
+import 'billing_info_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
+import '../../core/widgets/glassy_container.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -82,62 +85,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              Container(
-                color: AppColors.armyGreen,
-                padding: const EdgeInsets.only(top: 40, bottom: 20, left: 20, right: 20),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: AppColors.white,
-                      child: Icon(Icons.person, size: 40, color: AppColors.armyGreen),
-                    ),
-                    const SizedBox(width: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user.name, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(user.email, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GlassyContainer(
+                  padding: const EdgeInsets.all(20),
+                  color: AppColors.primaryBlue,
+                  opacity: 0.12,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 36,
+                        backgroundColor: Colors.white.withOpacity(0.1),
+                        child: const Icon(Icons.person, size: 36, color: AppColors.primaryBlue),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(user.name, style: const TextStyle(color: AppColors.textDarkBlue, fontSize: 22, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(user.email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate(
+                onPlay: (controller) => controller.repeat(reverse: true),
+              ).slideY(
+                begin: 0,
+                end: -0.015,
+                duration: 3.seconds,
+                curve: Curves.easeInOut,
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Your Impact', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Your Impact', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Expanded(child: _buildStatCard('Total Donated', '₹ ${user.totalDonated.toInt()}', Icons.volunteer_activism, AppColors.saffron)),
+                        Expanded(child: _buildStatCard('Total Donated', '₹ ${user.totalDonated.toInt()}', Icons.volunteer_activism, AppColors.saffron, 0)),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildStatCard('Campaigns', '\${user.savedCampaigns.length}', Icons.campaign, AppColors.armyGreen)),
+                        Expanded(child: _buildStatCard('Campaigns', '${user.savedCampaigns.length}', Icons.campaign, AppColors.primaryBlue, 1)),
                       ],
                     ),
                     const SizedBox(height: 32),
-                    const Text('Menu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
+                    const Text('Menu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
+                    const SizedBox(height: 12),
                     _buildMenuItem(Icons.history, 'Donation History', () {
                       _showDonationHistory(context, user.donationHistory);
-                    }),
+                    }, 0),
                     _buildMenuItem(Icons.card_membership, 'My Certificates', () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => CertificateScreen(user: user)));
-                    }),
-                    _buildMenuItem(Icons.bookmark, 'Saved Campaigns', null),
-                    _buildMenuItem(Icons.settings, 'Settings', null),
-                    const SizedBox(height: 20),
+                    }, 1),
+                    _buildMenuItem(Icons.receipt_long, 'Billing Information', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => BillingInfoScreen(user: user)),
+                      ).then((_) {
+                        setState(() {
+                          _profileFuture = _apiService.getUserProfile();
+                        });
+                      });
+                    }, 2),
+                    _buildMenuItem(Icons.bookmark, 'Saved Campaigns', null, 3),
+                    _buildMenuItem(Icons.settings, 'Settings', null, 4),
+                    const SizedBox(height: 32),
                     Center(
                       child: TextButton.icon(
                         onPressed: _logout,
                         icon: const Icon(Icons.logout, color: Colors.red),
-                        label: const Text('Logout', style: TextStyle(color: Colors.red)),
+                        label: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                       ),
-                    )
+                    ),
+                    const SizedBox(height: 100), // padding for bottom navigation bar
                   ],
                 ),
               ),
@@ -151,69 +180,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showDonationHistory(BuildContext context, List<dynamic> history) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Donation History', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Expanded(
-                child: history.isEmpty
-                    ? const Center(child: Text('No donations yet. Thank you for your support!'))
-                    : ListView.builder(
-                        itemCount: history.length,
-                        itemBuilder: (context, index) {
-                          final donation = history[index];
-                          final amount = donation['amount'] ?? 0;
-                          final date = donation['createdAt'] != null ? DateFormat('MMM d, yyyy').format(DateTime.parse(donation['createdAt'])) : 'Unknown';
-                          final campaignName = donation['campaign'] != null ? donation['campaign']['title'] : 'Campaign';
-                          return ListTile(
-                            leading: const CircleAvatar(backgroundColor: AppColors.armyGreen, child: Icon(Icons.volunteer_activism, color: Colors.white, size: 20)),
-                            title: Text('₹$amount - $campaignName', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(date),
-                            trailing: const Icon(Icons.check_circle, color: Colors.green),
-                          );
-                        },
-                      ),
-              )
-            ],
+        return GlassyContainer(
+          color: Colors.white,
+          opacity: 0.15,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.3), width: 1.5)),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Donation History', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: history.isEmpty
+                      ? const Center(child: Text('No donations yet. Thank you for your support!', style: TextStyle(color: AppColors.textSecondary)))
+                      : ListView.builder(
+                          itemCount: history.length,
+                          itemBuilder: (context, index) {
+                            final donation = history[index];
+                            final amount = donation['amount'] ?? 0;
+                            final date = donation['createdAt'] != null ? DateFormat('MMM d, yyyy').format(DateTime.parse(donation['createdAt'])) : 'Unknown';
+                            final campaignName = donation['campaign'] != null ? donation['campaign']['title'] : 'Campaign';
+                            return GlassyContainer(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              color: Colors.white,
+                              opacity: 0.05,
+                              borderRadius: BorderRadius.circular(12),
+                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              child: ListTile(
+                                leading: const CircleAvatar(backgroundColor: AppColors.primaryBlue, child: Icon(Icons.volunteer_activism, color: Colors.white, size: 20)),
+                                title: Text('₹$amount - $campaignName', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
+                                subtitle: Text(date, style: const TextStyle(color: AppColors.textSecondary)),
+                                trailing: const Icon(Icons.check_circle, color: Colors.green),
+                              ),
+                            );
+                          },
+                        ),
+                )
+              ],
+            ),
           ),
         );
       }
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, int index) {
+    return GlassyContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+      color: Colors.white,
+      opacity: 0.08,
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color),
           const SizedBox(height: 12),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
           const SizedBox(height: 4),
           Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         ],
       ),
+    ).animate(
+      onPlay: (controller) => controller.repeat(reverse: true),
+      delay: (index * 150).ms,
+    ).slideY(
+      begin: 0,
+      end: -0.02,
+      duration: (2000 + (index * 200)).ms,
+      curve: Curves.easeInOut,
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback? onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.armyGreen),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      contentPadding: EdgeInsets.zero,
-      onTap: onTap ?? () {},
+  Widget _buildMenuItem(IconData icon, String title, VoidCallback? onTap, int index) {
+    return GlassyContainer(
+      margin: const EdgeInsets.only(bottom: 10),
+      color: Colors.white,
+      opacity: 0.05,
+      borderRadius: BorderRadius.circular(12),
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.primaryBlue),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textDarkBlue)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap ?? () {},
+      ),
+    ).animate(
+      onPlay: (controller) => controller.repeat(reverse: true),
+      delay: (index * 100).ms,
+    ).slideY(
+      begin: 0,
+      end: -0.015,
+      duration: (2100 + (index * 150)).ms,
+      curve: Curves.easeInOut,
     );
   }
 }

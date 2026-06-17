@@ -16,12 +16,18 @@ class ApiService {
   }
 
   // --- Auth ---
-  Future<String?> register(String name, String email, String phone, String password) async {
+  Future<String?> register(String name, String email, String phone, String password, Map<String, dynamic> billingInfo) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConstants.authRegister),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'name': name, 'email': email, 'phone': phone, 'password': password}),
+        body: json.encode({
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'password': password,
+          'billingInfo': billingInfo,
+        }),
       );
 
       if (response.statusCode == 201) {
@@ -249,6 +255,35 @@ class ApiService {
       return null;
     } catch (e) {
       print('Get Profile Error: ${e.toString()}');
+      return null;
+    }
+  }
+
+  Future<UserModel?> updateProfile({String? name, String? phone, Map<String, dynamic>? billingInfo}) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final Map<String, dynamic> body = {};
+      if (name != null) body['name'] = name;
+      if (phone != null) body['phone'] = phone;
+      if (billingInfo != null) body['billingInfo'] = billingInfo;
+
+      final response = await http.put(
+        Uri.parse(ApiConstants.authProfile),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return UserModel.fromJson(json.decode(response.body));
+      }
+      return null;
+    } catch (e) {
+      print('Update Profile Error: ${e.toString()}');
       return null;
     }
   }

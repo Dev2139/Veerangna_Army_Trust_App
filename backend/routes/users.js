@@ -29,10 +29,10 @@ router.get('/profile', authMiddleware, async (req, res) => {
 // Update profile
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, phone, profilePhotoUrl } = req.body;
+    const { name, phone, profilePhotoUrl, billingInfo } = req.body;
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { name, phone, profilePhotoUrl },
+      { name, phone, profilePhotoUrl, billingInfo },
       { new: true }
     );
     res.json(user);

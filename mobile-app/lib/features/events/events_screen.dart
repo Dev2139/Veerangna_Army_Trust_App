@@ -5,6 +5,10 @@ import '../../data/models/event_model.dart';
 import '../../data/models/user_model.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../core/widgets/glassy_container.dart';
+import '../../core/widgets/glassy_background.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({Key? key}) : super(key: key);
@@ -156,118 +160,138 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Upcoming Events'),
-        backgroundColor: AppColors.armyGreen,
+        title: const Text('Upcoming Events', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: AppColors.primaryBlue.withOpacity(0.65),
         elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
       ),
-      body: FutureBuilder(
-        future: Future.wait([_eventsFuture, _profileFuture]),
-        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildSkeletonLoader();
-          }
+      body: GlassyBackground(
+        child: FutureBuilder(
+          future: Future.wait([_eventsFuture, _profileFuture]),
+          builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildSkeletonLoader();
+            }
 
-          if (snapshot.hasError) {
-            return const Center(child: Text('Failed to load events'));
-          }
+            if (snapshot.hasError) {
+              return const Center(child: Text('Failed to load events'));
+            }
 
-          final List<EventModel> eventsList = snapshot.data![0];
-          final UserModel? user = snapshot.data![1];
+            final List<EventModel> eventsList = snapshot.data![0];
+            final UserModel? user = snapshot.data![1];
 
-          if (eventsList.isEmpty) {
-            return const Center(child: Text('No upcoming events currently.'));
-          }
+            if (eventsList.isEmpty) {
+              return const Center(child: Text('No upcoming events currently.'));
+            }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: eventsList.length,
-            itemBuilder: (context, index) {
-              final event = eventsList[index];
-              
-              // Check if user is registered by seeing if their ID is in the registrations list
-              // Or if user.eventParticipation contains the event.id
-              bool isRegistered = false;
-              if (user != null) {
-                // If the user's ID is populated directly in the registration object
-                isRegistered = event.registrations.any((reg) {
-                  if (reg is Map && reg['user'] != null) {
-                    return reg['user'].toString() == user.id;
-                  }
-                  return false;
-                });
+            return ListView.builder(
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+              itemCount: eventsList.length,
+              itemBuilder: (context, index) {
+                final event = eventsList[index];
                 
-                // Fallback check against user's participation list
-                if (!isRegistered) {
-                  isRegistered = user.eventParticipation.contains(event.id);
+                // Check if user is registered by seeing if their ID is in the registrations list
+                // Or if user.eventParticipation contains the event.id
+                bool isRegistered = false;
+                if (user != null) {
+                  // If the user's ID is populated directly in the registration object
+                  isRegistered = event.registrations.any((reg) {
+                    if (reg is Map && reg['user'] != null) {
+                      return reg['user'].toString() == user.id;
+                    }
+                    return false;
+                  });
+                  
+                  // Fallback check against user's participation list
+                  if (!isRegistered) {
+                    isRegistered = user.eventParticipation.contains(event.id);
+                  }
                 }
-              }
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Column(
-                  children: [
-                    if (event.banners.isNotEmpty)
-                      Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                          image: DecorationImage(
-                            image: NetworkImage(event.banners.first),
-                            fit: BoxFit.cover,
+                return GlassyContainer(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  color: Colors.white,
+                  opacity: 0.08,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    children: [
+                      if (event.banners.isNotEmpty)
+                        Container(
+                          height: 120,
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            image: DecorationImage(
+                              image: NetworkImage(event.banners.first),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
-                    ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: AppColors.saffron.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(DateFormat('dd').format(event.date), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.saffron)),
-                            Text(DateFormat('MMM').format(event.date).toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.armyGreen)),
-                          ],
-                        ),
-                      ),
-                      title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Row(
+                      ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        leading: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppColors.saffron.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.saffron.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(event.location, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                              Text(DateFormat('dd').format(event.date), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.saffron)),
+                              Text(DateFormat('MMM').format(event.date).toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryBlue)),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(event.description, style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: isRegistered || user == null ? null : () => _showRegistrationSheet(context, event, user),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isRegistered ? Colors.grey : AppColors.armyGreen,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: Text(isRegistered ? 'Registered' : 'Register', style: TextStyle(color: isRegistered ? Colors.white70 : Colors.white)),
+                        title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Expanded(child: Text(event.location, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary))),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(event.description, style: const TextStyle(fontSize: 12, color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: isRegistered || user == null ? null : () => _showRegistrationSheet(context, event, user),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isRegistered ? Colors.grey[400] : AppColors.primaryBlue,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          child: Text(isRegistered ? 'Registered' : 'Register', style: TextStyle(color: isRegistered ? Colors.white70 : Colors.white)),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
+                    ],
+                  ),
+                ).animate(
+                  onPlay: (controller) => controller.repeat(reverse: true),
+                  delay: (index * 150).ms,
+                ).slideY(
+                  begin: 0,
+                  end: -0.02,
+                  duration: (2000 + (index * 200)).ms,
+                  curve: Curves.easeInOut,
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

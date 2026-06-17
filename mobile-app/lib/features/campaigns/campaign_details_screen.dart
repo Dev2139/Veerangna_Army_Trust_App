@@ -67,6 +67,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           builder: (_) => DonationSuccessScreen(
             campaignTitle: widget.title,
             amount: _selectedAmount,
+            transactionId: response.paymentId,
           ),
         ),
       );
@@ -151,7 +152,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                       return ChoiceChip(
                         label: Text('₹$amount', style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
                         selected: isSelected,
-                        selectedColor: AppColors.armyGreen,
+                        selectedColor: AppColors.primaryBlue,
                         onSelected: (selected) {
                           if (selected) setModalState(() => _selectedAmount = amount.toDouble());
                         },
@@ -165,7 +166,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                     child: ElevatedButton(
                       onPressed: _isProcessing ? null : () => _startPaymentProcess(setModalState),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.saffron,
+                        backgroundColor: AppColors.primaryBlue,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isProcessing
@@ -190,7 +191,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: AppColors.armyGreen,
+        backgroundColor: AppColors.primaryBlue,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -231,14 +232,14 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                     value: progress.clamp(0.0, 1.0),
                     minHeight: 12,
                     backgroundColor: Colors.grey[200],
-                    color: AppColors.saffron,
+                    color: AppColors.primaryBlue,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('₹ ${widget.collected.toStringAsFixed(0)} raised', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.armyGreen)),
+                      Text('₹ ${widget.collected.toStringAsFixed(0)} raised', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue)),
                       Text('Goal: ₹ ${widget.required.toStringAsFixed(0)}', style: const TextStyle(color: AppColors.textSecondary)),
                     ],
                   ),
@@ -257,7 +258,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
         child: ElevatedButton(
           onPressed: _showDonationBottomSheet,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.saffron,
+            backgroundColor: AppColors.primaryBlue,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),

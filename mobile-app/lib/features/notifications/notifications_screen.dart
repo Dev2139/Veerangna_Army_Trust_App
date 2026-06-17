@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/services/api_service.dart';
-import '../../data/models/event_model.dart';
-import '../../data/models/news_model.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../core/widgets/glassy_container.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 
 class NotificationItem {
   final String id;
@@ -91,11 +92,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: AppColors.armyGreen,
+        title: const Text('Notifications', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: AppColors.primaryBlue.withOpacity(0.65),
         elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
       ),
       body: FutureBuilder<List<NotificationItem>>(
         future: _notificationsFuture,
@@ -123,40 +130,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
             itemCount: notifications.length,
             itemBuilder: (context, index) {
               final item = notifications[index];
               final isEvent = item.type == 'event';
 
-              return Card(
-                elevation: 1,
+              return GlassyContainer(
                 margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                color: Colors.white,
+                opacity: 0.08,
+                borderRadius: BorderRadius.circular(16),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   leading: CircleAvatar(
-                    backgroundColor: isEvent ? AppColors.saffron.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                    backgroundColor: isEvent ? AppColors.saffron.withOpacity(0.2) : AppColors.primaryBlue.withOpacity(0.2),
                     child: Icon(
                       isEvent ? Icons.event : Icons.newspaper,
-                      color: isEvent ? AppColors.saffron : Colors.blue,
+                      color: isEvent ? AppColors.saffron : AppColors.primaryBlue,
                     ),
                   ),
-                  title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textDarkBlue)),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                      Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.black87)),
                       const SizedBox(height: 8),
                       Text(
                         DateFormat('MMM d, yyyy • h:mm a').format(item.date),
-                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                   isThreeLine: true,
                 ),
+              ).animate(
+                onPlay: (controller) => controller.repeat(reverse: true),
+                delay: (index * 120).ms,
+              ).slideY(
+                begin: 0,
+                end: -0.015,
+                duration: (2000 + (index * 150)).ms,
+                curve: Curves.easeInOut,
               );
             },
           );

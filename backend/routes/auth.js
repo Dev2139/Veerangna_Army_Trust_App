@@ -7,7 +7,7 @@ const User = require('../models/User');
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, password, billingInfo } = req.body;
     
     let user = await User.findOne({ email });
     if (user) {
@@ -21,7 +21,8 @@ router.post('/register', async (req, res) => {
       name,
       email,
       phone,
-      password: hashedPassword
+      password: hashedPassword,
+      billingInfo
     });
 
     await user.save();
@@ -30,7 +31,7 @@ router.post('/register', async (req, res) => {
       expiresIn: '7d'
     });
 
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, billingInfo: user.billingInfo } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -55,7 +56,7 @@ router.post('/login', async (req, res) => {
       expiresIn: '7d'
     });
 
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, billingInfo: user.billingInfo } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

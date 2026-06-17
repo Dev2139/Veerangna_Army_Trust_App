@@ -3,6 +3,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/services/api_service.dart';
 import '../../data/models/gallery_model.dart';
+import '../../core/widgets/glassy_container.dart';
+import '../../core/widgets/glassy_background.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 
 class FoodDonateScreen extends StatefulWidget {
   const FoodDonateScreen({Key? key}) : super(key: key);
@@ -44,330 +48,404 @@ class _FoodDonateScreenState extends State<FoodDonateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Donate Food', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.armyGreen,
+        title: const Text('Donate Food', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: AppColors.primaryBlue.withOpacity(0.65),
         elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Top Banner
-            Container(
-              color: const Color(0xFF27AE60), // Match the bright green from design
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.volunteer_activism, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        'ARMY TRUST DONATION',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
+      body: GlassyBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
+              // Top Banner as a Floating Glassy Container
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GlassyContainer(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  color: AppColors.primaryBlue,
+                  opacity: 0.15,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.volunteer_activism, color: AppColors.saffron),
+                          SizedBox(width: 8),
+                          Text(
+                            'ARMY TRUST DONATION',
+                            style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Their Future Needs Your Help',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE74C3C),
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Your Donation Can Fill A Child's Empty Plate",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFFB300),
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
-                  const Text(
-                    'Their Future Needs Your Help',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFE74C3C), // Red color
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Your Donation Can Fill An Child's Empty Plate",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFF1C40F), // Yellow color
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ],
+                ),
+              ).animate(
+                onPlay: (controller) => controller.repeat(reverse: true),
+              ).slideY(
+                begin: 0,
+                end: -0.012,
+                duration: 3.seconds,
+                curve: Curves.easeInOut,
               ),
-            ),
-            
-            // Donation Section
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  const Text(
-                    'Donate Food To Children Suffering From Hunger',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.armyGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '(After Donating You Can Easily Download Your 80G Donation Receipt)',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 30),
-                  
-                  // Selected Amount Display
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.armyGreen, width: 2),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                          color: AppColors.armyGreen,
-                          child: const Text('₹', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              
+              const SizedBox(height: 20),
+              
+              // Donation Form Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GlassyContainer(
+                  padding: const EdgeInsets.all(20),
+                  color: Colors.white,
+                  opacity: 0.08,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Donate Food To Children Suffering From Hunger',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryBlue,
                         ),
-                        Expanded(
-                          child: Text(
-                            selectedAmountIndex != null 
-                                ? '${donationOptions[selectedAmountIndex!]['amount']}'
-                                : customAmountController.text.isNotEmpty ? customAmountController.text : '0',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.armyGreen),
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '(After Donating You Can Easily Download Your 80G Donation Receipt)',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Selected Amount Display
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3), width: 1.5),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
-                          child: Text('AMOUNT TO DONATE', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                        )
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Donation Grid
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 2.2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemCount: donationOptions.length,
-                    itemBuilder: (context, index) {
-                      final option = donationOptions[index];
-                      final isSelected = selectedAmountIndex == index;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedAmountIndex = index;
-                            customAmountController.clear();
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.armyGreen : Colors.white,
-                            border: Border.all(color: AppColors.armyGreen),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '${option['children']} बच्चों को भोजन दान करें',
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : AppColors.armyGreen,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryBlue.withOpacity(0.1),
+                                borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+                              ),
+                              child: const Text('₹', style: TextStyle(color: AppColors.primaryBlue, fontSize: 22, fontWeight: FontWeight.bold)),
+                            ),
+                            Expanded(
+                              child: Text(
+                                selectedAmountIndex != null 
+                                    ? '${donationOptions[selectedAmountIndex!]['amount']}'
+                                    : customAmountController.text.isNotEmpty ? customAmountController.text : '0',
                                 textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '₹${option['amount']}',
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : AppColors.armyGreen,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Text('AMOUNT', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
+                            )
+                          ],
                         ),
-                      );
-                    },
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  const Text('Custom Amount', style: TextStyle(color: AppColors.armyGreen, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: customAmountController,
-                    keyboardType: TextInputType.number,
-                    onChanged: (val) {
-                      setState(() {
-                        selectedAmountIndex = null;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Enter custom amount',
-                      border: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppColors.armyGreen, width: 2),
-                        borderRadius: BorderRadius.circular(4),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppColors.armyGreen, width: 2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppColors.armyGreen, width: 2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Implement payment
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment gateway integration pending.')));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.armyGreen,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('DONATE NOW', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
-              ),
-            ),
-            
-            // Videos Section
-            Container(
-              color: const Color(0xFFD5E8D4), // Light green background
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
-              child: Column(
-                children: [
-                  const Text(
-                    'Help Us Donate Food To As Many Needy As Possible!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFE74C3C), // Red
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildYouTubeThumbnail('hcY_TqUIXKM'),
-                        const SizedBox(width: 15),
-                        _buildYouTubeThumbnail('Ohgo25tz-m4'),
-                        const SizedBox(width: 15),
-                        _buildYouTubeThumbnail('s3KSzrj6pio'),
-                        const SizedBox(width: 15),
-                        _buildYouTubeThumbnail('3uC36eGuPwQ'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('View More Videos'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.armyGreen,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                  )
-                ],
-              ),
-            ),
-            
-            // Real Photos Section
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
-              child: Column(
-                children: [
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                      children: [
-                        TextSpan(text: 'Real Photos ', style: TextStyle(color: Color(0xFFE74C3C))),
-                        TextSpan(text: 'Real Change!', style: TextStyle(color: AppColors.armyGreen)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  FutureBuilder<List<GalleryModel>>(
-                    future: _foodGalleryFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator(color: AppColors.armyGreen));
-                      }
                       
-                      final images = snapshot.data ?? [];
+                      const SizedBox(height: 24),
                       
-                      if (images.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Text('No food donation photos yet.', textAlign: TextAlign.center),
-                        );
-                      }
-                      
-                      return GridView.builder(
+                      // Donation Grid
+                      GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
+                          childAspectRatio: 2.2,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
-                          childAspectRatio: 1,
                         ),
-                        itemCount: images.length,
+                        itemCount: donationOptions.length,
                         itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              images[index].imageUrl,
-                              fit: BoxFit.cover,
+                          final option = donationOptions[index];
+                          final isSelected = selectedAmountIndex == index;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedAmountIndex = index;
+                                customAmountController.clear();
+                              });
+                            },
+                            child: GlassyContainer(
+                              color: isSelected ? AppColors.primaryBlue : Colors.white,
+                              opacity: isSelected ? 0.35 : 0.05,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primaryBlue : Colors.white.withOpacity(0.2),
+                                width: 1.5,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '${option['children']} बच्चों को भोजन',
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : AppColors.textDarkBlue,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '₹${option['amount']}',
+                                    style: TextStyle(
+                                      color: isSelected ? Color(0xFFFFB300) : AppColors.primaryBlue,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
-                      );
-                    }
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      const Text('Custom Amount', style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: customAmountController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) {
+                          setState(() {
+                            selectedAmountIndex = null;
+                          });
+                        },
+                        style: const TextStyle(color: AppColors.textDarkBlue, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          hintText: 'Enter custom amount',
+                          hintStyle: const TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.04),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.primaryBlue.withOpacity(0.3)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.primaryBlue.withOpacity(0.3)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: AppColors.primaryBlue),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment gateway integration pending.')));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            elevation: 0,
+                          ),
+                          child: const Text('DONATE NOW', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      )
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+              
+              const SizedBox(height: 24),
+              
+              // Videos Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GlassyContainer(
+                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
+                  color: Colors.white,
+                  opacity: 0.08,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Help Us Donate Food To As Many Needy As Possible!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE74C3C),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildYouTubeThumbnail('hcY_TqUIXKM', 0),
+                            const SizedBox(width: 15),
+                            _buildYouTubeThumbnail('Ohgo25tz-m4', 1),
+                            const SizedBox(width: 15),
+                            _buildYouTubeThumbnail('s3KSzrj6pio', 2),
+                            const SizedBox(width: 15),
+                            _buildYouTubeThumbnail('3uC36eGuPwQ', 3),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        label: const Text('View More Videos', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          elevation: 0,
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Real Photos Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GlassyContainer(
+                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
+                  color: Colors.white,
+                  opacity: 0.08,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    children: [
+                      RichText(
+                        text: const TextSpan(
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          children: [
+                            TextSpan(text: 'Real Photos ', style: TextStyle(color: Color(0xFFE74C3C))),
+                            TextSpan(text: 'Real Change!', style: TextStyle(color: AppColors.primaryBlue)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FutureBuilder<List<GalleryModel>>(
+                        future: _foodGalleryFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
+                          }
+                          
+                          final images = snapshot.data ?? [];
+                          
+                          if (images.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: Text('No food donation photos yet.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+                            );
+                          }
+                          
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1,
+                            ),
+                            itemCount: images.length,
+                            itemBuilder: (context, index) {
+                              return GlassyContainer(
+                                color: Colors.white,
+                                opacity: 0.05,
+                                borderRadius: BorderRadius.circular(16),
+                                padding: const EdgeInsets.all(4),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    images[index].imageUrl,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ).animate(
+                                onPlay: (controller) => controller.repeat(reverse: true),
+                                delay: (index * 100).ms,
+                              ).slideY(
+                                begin: 0,
+                                end: -0.015,
+                                duration: (2100 + (index * 180)).ms,
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                          );
+                        }
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildYouTubeThumbnail(String videoId) {
+  Widget _buildYouTubeThumbnail(String videoId, int index) {
     final thumbnailUrl = 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
     final videoUrl = Uri.parse('https://youtu.be/$videoId');
     
@@ -381,33 +459,43 @@ class _FoodDonateScreenState extends State<FoodDonateScreen> {
           }
         }
       },
-      child: Container(
+      child: GlassyContainer(
         width: 250,
         height: 150,
-        decoration: BoxDecoration(
+        color: Colors.white,
+        opacity: 0.05,
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(4),
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          image: DecorationImage(
-            image: NetworkImage(thumbnailUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.black.withOpacity(0.3),
-          ),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(thumbnailUrl, fit: BoxFit.cover),
+              Container(color: Colors.black.withOpacity(0.25)),
+              Center(
+                child: GlassyContainer(
+                  width: 50,
+                  height: 50,
+                  color: Colors.red,
+                  opacity: 0.65,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(color: Colors.white38),
+                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 28),
+                ),
               ),
-              child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
-            ),
+            ],
           ),
         ),
       ),
+    ).animate(
+      onPlay: (controller) => controller.repeat(reverse: true),
+      delay: (index * 150).ms,
+    ).slideY(
+      begin: 0,
+      end: -0.02,
+      duration: (2000 + (index * 200)).ms,
+      curve: Curves.easeInOut,
     );
   }
 }
