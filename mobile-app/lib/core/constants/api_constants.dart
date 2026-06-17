@@ -2,15 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiConstants {
-  static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:5000/api';
-    } else if (Platform.isAndroid) {
-      return 'http://192.168.172.90:5000/api'; // Actual local IP for physical phone
-    } else {
-      return 'http://192.168.172.90:5000/api';
-    }
-  }
+  static const String baseUrl = 'https://veerangna-army-trust-app.vercel.app/api';
   
   static String get authLogin => '$baseUrl/auth/login';
   static String get authRegister => '$baseUrl/auth/register';
