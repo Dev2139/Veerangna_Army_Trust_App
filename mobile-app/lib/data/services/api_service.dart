@@ -287,4 +287,30 @@ class ApiService {
       return null;
     }
   }
+
+  Future<UserModel?> uploadProfilePhoto(String filePath) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConstants.baseUrl}/users/upload-photo'),
+      );
+      
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('image', filePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return UserModel.fromJson(json.decode(response.body));
+      }
+      return null;
+    } catch (e) {
+      print('Upload Profile Photo Error: ${e.toString()}');
+      return null;
+    }
+  }
 }

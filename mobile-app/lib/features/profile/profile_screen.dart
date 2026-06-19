@@ -5,11 +5,13 @@ import '../../data/models/user_model.dart';
 import '../auth/login_screen.dart';
 import 'certificate_screen.dart';
 import 'billing_info_screen.dart';
+import 'id_card_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 import '../../core/widgets/glassy_container.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -21,11 +23,84 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   late Future<UserModel?> _profileFuture;
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
     super.initState();
     _profileFuture = _apiService.getUserProfile();
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    final picker = ImagePicker();
+    
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
+                title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: AppColors.primaryBlue),
+                title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    final pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() {
+      _isUploadingPhoto = true;
+    });
+
+    try {
+      final updated = await _apiService.uploadProfilePhoto(pickedFile.path);
+      if (updated != null) {
+        setState(() {
+          _profileFuture = _apiService.getUserProfile();
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile photo uploaded successfully!'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to upload photo.'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Upload Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
+    }
   }
 
   void _logout() async {
@@ -95,10 +170,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(24),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: Colors.white.withOpacity(0.1),
-                        child: const Icon(Icons.person, size: 36, color: AppColors.primaryBlue),
+                      GestureDetector(
+                        onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 36,
+                              backgroundColor: Colors.white.withOpacity(0.15),
+                              backgroundImage: (user.profilePhotoUrl != null && user.profilePhotoUrl!.isNotEmpty && !_isUploadingPhoto)
+                                  ? NetworkImage(user.profilePhotoUrl!)
+                                  : null,
+                              child: _isUploadingPhoto
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(color: AppColors.primaryBlue, strokeWidth: 2),
+                                    )
+                                  : (user.profilePhotoUrl == null || user.profilePhotoUrl!.isEmpty)
+                                      ? const Icon(Icons.person, size: 36, color: AppColors.primaryBlue)
+                                      : null,
+                            ),
+                            if (!_isUploadingPhoto)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primaryBlue,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 20),
                       Expanded(
@@ -146,6 +256,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildMenuItem(Icons.card_membership, 'My Certificates', () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => CertificateScreen(user: user)));
                     }, 1),
+                    _buildMenuItem(Icons.badge, 'My ID Card', () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => IDCardScreen(user: user)));
+                    }, 2),
                     _buildMenuItem(Icons.receipt_long, 'Billing Information', () {
                       Navigator.push(
                         context,
@@ -155,9 +268,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _profileFuture = _apiService.getUserProfile();
                         });
                       });
-                    }, 2),
-                    _buildMenuItem(Icons.bookmark, 'Saved Campaigns', null, 3),
-                    _buildMenuItem(Icons.settings, 'Settings', null, 4),
+                    }, 3),
+                    _buildMenuItem(Icons.bookmark, 'Saved Campaigns', null, 4),
+                    _buildMenuItem(Icons.settings, 'Settings', null, 5),
                     const SizedBox(height: 32),
                     Center(
                       child: TextButton.icon(

@@ -78,6 +78,7 @@ class UserModel {
   final double totalDonated;
   final List<dynamic> donationHistory;
   final BillingInfo billingInfo;
+  final String? profilePhotoUrl;
 
   UserModel({
     required this.id,
@@ -90,6 +91,7 @@ class UserModel {
     this.createdAt,
     this.totalDonated = 0.0,
     this.donationHistory = const [],
+    this.profilePhotoUrl,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -104,6 +106,7 @@ class UserModel {
       createdAt: json['createdAt'],
       totalDonated: (json['totalDonated'] ?? 0).toDouble(),
       donationHistory: json['donationHistory'] ?? [],
+      profilePhotoUrl: json['profilePhotoUrl'],
     );
   }
 }
