@@ -20,6 +20,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../core/widgets/glassy_container.dart';
 import '../../core/widgets/glassy_background.dart';
+import '../../core/widgets/autoplay_video_player.dart';
 import 'dart:ui';
 
 class HomeScreen extends StatefulWidget {
@@ -228,6 +229,13 @@ class _HomeViewState extends State<HomeView> {
                   },
                 ).animate().fade(duration: 500.ms).slideY(begin: -0.1, end: 0, curve: Curves.easeOut);
               }
+            ),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: AutoplayVideoPlayer(
+                videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-charity-collector-collecting-coins-in-a-box-41584-large.mp4',
+              ),
             ),
             const SizedBox(height: 20),
             _buildSuccessStoryCard(),
