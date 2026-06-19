@@ -234,7 +234,7 @@ class _HomeViewState extends State<HomeView> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: AutoplayVideoPlayer(
-                videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-charity-collector-collecting-coins-in-a-box-41584-large.mp4',
+                videoUrl: 'https://res.cloudinary.com/dsddldquo/video/upload/v1781862781/mfuorvvk96bhguqu48za.mp4',
               ),
             ),
             const SizedBox(height: 20),
