@@ -174,21 +174,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
                         child: Stack(
                           children: [
-                            CircleAvatar(
-                              radius: 36,
-                              backgroundColor: Colors.white.withOpacity(0.15),
-                              backgroundImage: (user.profilePhotoUrl != null && user.profilePhotoUrl!.isNotEmpty && !_isUploadingPhoto)
-                                  ? NetworkImage(user.profilePhotoUrl!)
-                                  : null,
-                              child: _isUploadingPhoto
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(color: AppColors.primaryBlue, strokeWidth: 2),
-                                    )
-                                  : (user.profilePhotoUrl == null || user.profilePhotoUrl!.isEmpty)
-                                      ? const Icon(Icons.person, size: 36, color: AppColors.primaryBlue)
-                                      : null,
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.15),
+                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                              ),
+                              child: ClipOval(
+                                child: _isUploadingPhoto
+                                    ? const Center(
+                                        child: SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(color: AppColors.primaryBlue, strokeWidth: 2),
+                                        ),
+                                      )
+                                    : (user.profilePhotoUrl != null && user.profilePhotoUrl!.isNotEmpty)
+                                        ? Image.network(
+                                            user.profilePhotoUrl!,
+                                            width: 72,
+                                            height: 72,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                const Icon(Icons.person, size: 36, color: AppColors.primaryBlue),
+                                          )
+                                        : const Icon(Icons.person, size: 36, color: AppColors.primaryBlue),
+                              ),
                             ),
                             if (!_isUploadingPhoto)
                               Positioned(

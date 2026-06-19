@@ -314,6 +314,8 @@ class _IDCardScreenState extends State<IDCardScreen> {
                                 child: (user.profilePhotoUrl != null && user.profilePhotoUrl!.isNotEmpty)
                                     ? Image.network(
                                         user.profilePhotoUrl!,
+                                        width: double.infinity,
+                                        height: double.infinity,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) =>
                                             _buildInitialsAvatar(user),
