@@ -8,11 +8,19 @@ import '../models/user_model.dart';
 import '../models/event_model.dart';
 import '../models/gallery_model.dart';
 import '../models/banner_model.dart';
+import '../models/wallet_model.dart';
 
 class ApiService {
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
+  }
+
+  /// Clears the stored token when the server rejects it (expired/invalid),
+  /// so the app can redirect the user to the login screen.
+  Future<void> _clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
   }
 
   // --- Auth ---
@@ -252,6 +260,10 @@ class ApiService {
       if (response.statusCode == 200) {
         return UserModel.fromJson(json.decode(response.body));
       }
+      if (response.statusCode == 401) {
+        // Token expired or invalid — clear it so the user is sent to login.
+        await _clearToken();
+      }
       return null;
     } catch (e) {
       print('Get Profile Error: ${e.toString()}');
@@ -310,6 +322,116 @@ class ApiService {
       return null;
     } catch (e) {
       print('Upload Profile Photo Error: ${e.toString()}');
+      return null;
+    }
+  }
+
+  // --- Wallet ---
+
+  /// Get the current user's wallet (creates one if it doesn't exist)
+  Future<WalletModel?> getWallet() async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final response = await http.get(
+        Uri.parse(ApiConstants.wallet),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return WalletModel.fromJson(json.decode(response.body));
+      }
+      return null;
+    } catch (e) {
+      print('Get Wallet Error: ${e.toString()}');
+      return null;
+    }
+  }
+
+  /// Create a Razorpay order to top-up wallet. Returns the Razorpay order_id.
+  Future<String?> createWalletTopUpOrder(double amount) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.walletAddMoneyOrder),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'amount': amount}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['id']; // Razorpay order_id
+      }
+      return null;
+    } catch (e) {
+      print('Create Wallet TopUp Order Error: ${e.toString()}');
+      return null;
+    }
+  }
+
+  /// Verify Razorpay payment for wallet top-up. Returns new balance on success.
+  Future<Map<String, dynamic>?> verifyWalletTopUp(
+      String orderId, String paymentId, String signature, double amount) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.walletAddMoneyVerify),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'razorpay_order_id': orderId,
+          'razorpay_payment_id': paymentId,
+          'razorpay_signature': signature,
+          'amount': amount,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Verify Wallet TopUp Error: ${e.toString()}');
+      return null;
+    }
+  }
+
+  /// Donate from wallet balance to a campaign. Returns response map on success.
+  Future<Map<String, dynamic>?> donateFromWallet(String campaignId, double amount) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.walletDonate),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'campaignId': campaignId, 'amount': amount}),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return data;
+      }
+      // Return error info too so UI can show message
+      return {'error': data['error'] ?? 'Failed to donate from wallet'};
+    } catch (e) {
+      print('Donate From Wallet Error: ${e.toString()}');
       return null;
     }
   }

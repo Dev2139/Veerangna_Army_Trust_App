@@ -60,7 +60,7 @@ class LegalDocumentsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Text(
-                    'CHAMPABEN MADHAVJIBHAI R. JHAKKAS CHARITABLE TRUST',
+                    'late CHAMPABEN MADHAVJIBHAI RATANSHIBHAI THAKKAR CHARITABLE TRUST',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,

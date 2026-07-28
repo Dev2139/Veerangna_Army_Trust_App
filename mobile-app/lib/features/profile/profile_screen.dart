@@ -6,6 +6,7 @@ import '../auth/login_screen.dart';
 import 'certificate_screen.dart';
 import 'billing_info_screen.dart';
 import 'id_card_screen.dart';
+import 'wallet_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
@@ -152,7 +153,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          return const Center(child: Text('Failed to load profile. Please log in again.'));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.account_circle_outlined, size: 72, color: AppColors.textSecondary),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Failed to load profile',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Your session may have expired or there was a network issue.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _profileFuture = _apiService.getUserProfile();
+                      });
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text(
+                      'Log Out & Sign In Again',
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         final user = snapshot.data!;
@@ -266,12 +313,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildMenuItem(Icons.history, 'Donation History', () {
                       _showDonationHistory(context, user.donationHistory);
                     }, 0),
+                    _buildMenuItemWithBadge(Icons.account_balance_wallet, 'My Wallet', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const WalletScreen()),
+                      );
+                    }, 1, AppColors.armyGreen),
                     _buildMenuItem(Icons.card_membership, 'My Certificates', () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => CertificateScreen(user: user)));
-                    }, 1),
+                    }, 2),
                     _buildMenuItem(Icons.badge, 'My ID Card', () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => IDCardScreen(user: user)));
-                    }, 2),
+                    }, 3),
                     _buildMenuItem(Icons.receipt_long, 'Billing Information', () {
                       Navigator.push(
                         context,
@@ -281,9 +334,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _profileFuture = _apiService.getUserProfile();
                         });
                       });
-                    }, 3),
-                    _buildMenuItem(Icons.bookmark, 'Saved Campaigns', null, 4),
-                    _buildMenuItem(Icons.settings, 'Settings', null, 5),
+                    }, 4),
+                    _buildMenuItem(Icons.bookmark, 'Saved Campaigns', null, 5),
+                    _buildMenuItem(Icons.settings, 'Settings', null, 6),
                     const SizedBox(height: 32),
                     Center(
                       child: TextButton.icon(
@@ -392,6 +445,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: Icon(icon, color: AppColors.primaryBlue),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textDarkBlue)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap ?? () {},
+      ),
+    ).animate(
+      onPlay: (controller) => controller.repeat(reverse: true),
+      delay: (index * 100).ms,
+    ).slideY(
+      begin: 0,
+      end: -0.015,
+      duration: (2100 + (index * 150)).ms,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  /// Menu item with a colored icon tint (used for special items like Wallet)
+  Widget _buildMenuItemWithBadge(IconData icon, String title, VoidCallback? onTap, int index, Color iconColor) {
+    return GlassyContainer(
+      margin: const EdgeInsets.only(bottom: 10),
+      color: Colors.white,
+      opacity: 0.05,
+      borderRadius: BorderRadius.circular(12),
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textDarkBlue)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FutureBuilder(
+              future: _apiService.getWallet(),
+              builder: (context, snap) {
+                if (snap.hasData && snap.data != null) {
+                  final balance = snap.data!.balance;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '₹${balance.toInt()}',
+                      style: TextStyle(
+                        color: iconColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
         onTap: onTap ?? () {},
       ),
     ).animate(

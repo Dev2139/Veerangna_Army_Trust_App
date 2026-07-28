@@ -13,4 +13,8 @@ class ApiConstants {
   static String get gallery => '$baseUrl/gallery';
   static String get banners => '$baseUrl/banners/active';
   static String get createOrder => '$baseUrl/donations/create-order';
+  static String get wallet => '$baseUrl/wallet';
+  static String get walletAddMoneyOrder => '$baseUrl/wallet/add-money/create-order';
+  static String get walletAddMoneyVerify => '$baseUrl/wallet/add-money/verify';
+  static String get walletDonate => '$baseUrl/wallet/donate';
 }

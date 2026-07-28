@@ -21,6 +21,7 @@ const adminRoutes = require('./routes/admin');
 const galleryRoutes = require('./routes/gallery');
 const bannersRoutes = require('./routes/banners');
 const foodGalleryRoutes = require('./routes/food-gallery');
+const walletRoutes = require('./routes/wallet');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignsRoutes);
@@ -34,6 +35,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/banners', bannersRoutes);
 app.use('/api/food-gallery', foodGalleryRoutes);
+app.use('/api/wallet', walletRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

@@ -130,7 +130,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       
                       // Trust name
                       const Text(
-                        'Champaben Madhavjibhai Ratansinhbhai Thakkar Charitable Trust',
+                        'late. Champaben Madhavjibhai Ratanshibhai Thakkar Charitable Trust',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
