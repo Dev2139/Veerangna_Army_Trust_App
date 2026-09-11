@@ -4,6 +4,8 @@ const walletTransactionSchema = new mongoose.Schema({
   type: { type: String, enum: ['credit', 'debit'], required: true },
   amount: { type: Number, required: true },
   description: { type: String, required: true },
+  cashfree_order_id: { type: String },
+  cashfree_payment_id: { type: String },
   razorpay_order_id: { type: String },
   razorpay_payment_id: { type: String },
   campaign: { type: mongoose.Schema.Types.ObjectId, ref: 'Campaign', default: null },

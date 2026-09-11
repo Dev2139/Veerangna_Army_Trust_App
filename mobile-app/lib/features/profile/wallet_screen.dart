@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cferrorresponse/cferrorresponse.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfpayment/cfwebcheckoutpayment.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfpaymentgateway/cfpaymentgatewayservice.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfsession/cfsession.dart';
+import 'package:flutter_cashfree_pg_sdk/utils/cfenums.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/glassy_container.dart';
@@ -21,11 +25,11 @@ class _WalletScreenState extends State<WalletScreen>
   late Future<WalletModel?> _walletFuture;
   late AnimationController _balanceAnimController;
 
-  late Razorpay _razorpay;
+  final CFPaymentGatewayService _cfPaymentGatewayService = CFPaymentGatewayService();
   double _topUpAmount = 500;
   bool _isProcessing = false;
-
-  static const String _razorpayKey = 'rzp_test_T1pupuewW0vIvQ';
+  String? _currentTopUpOrderId;
+  StateSetter? _activeModalSetState;
 
   @override
   void initState() {
@@ -36,28 +40,25 @@ class _WalletScreenState extends State<WalletScreen>
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
 
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handleTopUpSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handleTopUpError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _cfPaymentGatewayService.setCallback(_handleTopUpSuccess, _handleTopUpError);
   }
 
   @override
   void dispose() {
     _balanceAnimController.dispose();
-    _razorpay.clear();
     super.dispose();
   }
 
-  void _handleTopUpSuccess(PaymentSuccessResponse response) async {
+  void _handleTopUpSuccess(String orderId) async {
+    final targetOrderId = orderId.isNotEmpty ? orderId : (_currentTopUpOrderId ?? '');
     final result = await _apiService.verifyWalletTopUp(
-      response.orderId ?? '',
-      response.paymentId ?? '',
-      response.signature ?? '',
+      targetOrderId,
+      targetOrderId,
       _topUpAmount,
     );
 
     setState(() => _isProcessing = false);
+    _activeModalSetState?.call(() => _isProcessing = false);
 
     if (result != null && result['success'] == true) {
       _refreshWallet();
@@ -72,13 +73,10 @@ class _WalletScreenState extends State<WalletScreen>
     }
   }
 
-  void _handleTopUpError(PaymentFailureResponse response) {
+  void _handleTopUpError(CFErrorResponse errorResponse, String orderId) {
     setState(() => _isProcessing = false);
-    _showErrorSnackBar('Payment failed: ${response.message}');
-  }
-
-  void _handleExternalWallet(ExternalWalletResponse response) {
-    setState(() => _isProcessing = false);
+    _activeModalSetState?.call(() => _isProcessing = false);
+    _showErrorSnackBar('Payment failed: ${errorResponse.getMessage() ?? "Transaction failed"}');
   }
 
   void _refreshWallet() {
@@ -113,30 +111,38 @@ class _WalletScreenState extends State<WalletScreen>
     ));
   }
 
-  Future<void> _startTopUp() async {
+  Future<void> _startTopUp(StateSetter? setModalState) async {
+    _activeModalSetState = setModalState;
     setState(() => _isProcessing = true);
-
-    final orderId = await _apiService.createWalletTopUpOrder(_topUpAmount);
-    if (orderId == null) {
-      setState(() => _isProcessing = false);
-      _showErrorSnackBar('Could not initiate payment. Please try again.');
-      return;
-    }
-
-    final options = {
-      'key': _razorpayKey,
-      'amount': (_topUpAmount * 100).toInt(),
-      'name': 'Army Trust Wallet',
-      'order_id': orderId,
-      'description': 'Add ₹${_topUpAmount.toInt()} to Wallet',
-      'timeout': 120,
-      'prefill': {'contact': '9876543210', 'email': 'user@armytrust.org'},
-    };
+    setModalState?.call(() => _isProcessing = true);
 
     try {
-      _razorpay.open(options);
+      final orderData = await _apiService.createWalletTopUpOrder(_topUpAmount);
+      if (orderData == null || orderData['payment_session_id'] == null) {
+        setState(() => _isProcessing = false);
+        setModalState?.call(() => _isProcessing = false);
+        _showErrorSnackBar('Could not initiate payment. Please try again.');
+        return;
+      }
+
+      final String orderId = orderData['order_id'] ?? orderData['id'] ?? '';
+      final String paymentSessionId = orderData['payment_session_id'] ?? '';
+      _currentTopUpOrderId = orderId;
+
+      var session = CFSessionBuilder()
+          .setEnvironment(CFEnvironment.SANDBOX)
+          .setOrderId(orderId)
+          .setPaymentSessionId(paymentSessionId)
+          .build();
+
+      var cfWebCheckoutPayment = CFWebCheckoutPaymentBuilder()
+          .setSession(session)
+          .build();
+
+      _cfPaymentGatewayService.doPayment(cfWebCheckoutPayment);
     } catch (e) {
       setState(() => _isProcessing = false);
+      setModalState?.call(() => _isProcessing = false);
       _showErrorSnackBar('Could not open payment gateway.');
     }
   }
@@ -248,8 +254,7 @@ class _WalletScreenState extends State<WalletScreen>
                         onPressed: _isProcessing
                             ? null
                             : () {
-                                Navigator.pop(context);
-                                _startTopUp();
+                                _startTopUp(setModalState);
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryBlue,
@@ -273,7 +278,7 @@ class _WalletScreenState extends State<WalletScreen>
                                       color: Colors.white, size: 20),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Add ₹${_topUpAmount.toInt()} via Razorpay',
+                                    'Add ₹${_topUpAmount.toInt()} via Cashfree',
                                     style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

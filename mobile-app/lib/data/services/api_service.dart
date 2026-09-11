@@ -144,7 +144,7 @@ class ApiService {
   }
 
   // --- Payments ---
-  Future<String?> createRazorpayOrder(String campaignId, double amount) async {
+  Future<Map<String, dynamic>?> createCashfreeOrder(String campaignId, double amount) async {
     try {
       final token = await _getToken();
       if (token == null) return null;
@@ -162,9 +162,9 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['id']; // Razorpay order_id
+        return json.decode(response.body);
       }
+      print('Create Order Failed (${response.statusCode}): ${response.body}');
       return null;
     } catch (e) {
       print('Create Order Error: ${e.toString()}');
@@ -172,7 +172,7 @@ class ApiService {
     }
   }
 
-  Future<bool> verifyPayment(String orderId, String paymentId, String signature, String campaignId, double amount) async {
+  Future<bool> verifyPayment(String orderId, String paymentId, String campaignId, double amount) async {
     try {
       final token = await _getToken();
       if (token == null) return false;
@@ -184,9 +184,8 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'razorpay_order_id': orderId,
-          'razorpay_payment_id': paymentId,
-          'razorpay_signature': signature,
+          'order_id': orderId,
+          'payment_id': paymentId,
           'campaignId': campaignId,
           'amount': amount,
         }),
@@ -352,8 +351,8 @@ class ApiService {
     }
   }
 
-  /// Create a Razorpay order to top-up wallet. Returns the Razorpay order_id.
-  Future<String?> createWalletTopUpOrder(double amount) async {
+  /// Create a Cashfree order to top-up wallet.
+  Future<Map<String, dynamic>?> createWalletTopUpOrder(double amount) async {
     try {
       final token = await _getToken();
       if (token == null) return null;
@@ -368,9 +367,9 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['id']; // Razorpay order_id
+        return json.decode(response.body);
       }
+      print('Create Wallet TopUp Order Failed (${response.statusCode}): ${response.body}');
       return null;
     } catch (e) {
       print('Create Wallet TopUp Order Error: ${e.toString()}');
@@ -378,9 +377,9 @@ class ApiService {
     }
   }
 
-  /// Verify Razorpay payment for wallet top-up. Returns new balance on success.
+  /// Verify Cashfree payment for wallet top-up. Returns new balance on success.
   Future<Map<String, dynamic>?> verifyWalletTopUp(
-      String orderId, String paymentId, String signature, double amount) async {
+      String orderId, String paymentId, double amount) async {
     try {
       final token = await _getToken();
       if (token == null) return null;
@@ -392,9 +391,8 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'razorpay_order_id': orderId,
-          'razorpay_payment_id': paymentId,
-          'razorpay_signature': signature,
+          'order_id': orderId,
+          'payment_id': paymentId,
           'amount': amount,
         }),
       );

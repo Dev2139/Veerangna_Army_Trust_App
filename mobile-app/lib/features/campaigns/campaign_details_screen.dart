@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cferrorresponse/cferrorresponse.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfpayment/cfwebcheckoutpayment.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfpaymentgateway/cfpaymentgatewayservice.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfsession/cfsession.dart';
+import 'package:flutter_cashfree_pg_sdk/utils/cfenums.dart';
 import '../../core/theme/app_colors.dart';
 import 'donation_success_screen.dart';
 import '../../data/services/api_service.dart';
@@ -26,37 +30,30 @@ class CampaignDetailsScreen extends StatefulWidget {
 }
 
 class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
-  late Razorpay _razorpay;
+  final CFPaymentGatewayService _cfPaymentGatewayService = CFPaymentGatewayService();
   final ApiService _apiService = ApiService();
   double _selectedAmount = 500;
   bool _isProcessing = false;
+  String? _currentOrderId;
+  StateSetter? _activeModalSetState;
 
   @override
   void initState() {
     super.initState();
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _cfPaymentGatewayService.setCallback(_handlePaymentSuccess, _handlePaymentError);
   }
 
-  @override
-  void dispose() {
-    _razorpay.clear();
-    super.dispose();
-  }
-
-  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    // Verify payment on backend
+  void _handlePaymentSuccess(String orderId) async {
+    final targetOrderId = orderId.isNotEmpty ? orderId : (_currentOrderId ?? '');
     bool isVerified = await _apiService.verifyPayment(
-      response.orderId ?? '',
-      response.paymentId ?? '',
-      response.signature ?? '',
+      targetOrderId,
+      targetOrderId,
       widget.campaignId,
       _selectedAmount,
     );
 
     setState(() => _isProcessing = false);
+    _activeModalSetState?.call(() => _isProcessing = false);
 
     if (isVerified) {
       if (!mounted) return;
@@ -67,7 +64,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           builder: (_) => DonationSuccessScreen(
             campaignTitle: widget.title,
             amount: _selectedAmount,
-            transactionId: response.paymentId,
+            transactionId: targetOrderId,
           ),
         ),
       );
@@ -79,53 +76,56 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
     }
   }
 
-  void _handlePaymentError(PaymentFailureResponse response) {
+  void _handlePaymentError(CFErrorResponse errorResponse, String orderId) {
     setState(() => _isProcessing = false);
+    _activeModalSetState?.call(() => _isProcessing = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Payment failed: ${response.message}'), backgroundColor: Colors.red),
-    );
-  }
-
-  void _handleExternalWallet(ExternalWalletResponse response) {
-    setState(() => _isProcessing = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('External Wallet Selected')),
+      SnackBar(
+        content: Text('Payment failed: ${errorResponse.getMessage() ?? "Transaction failed"}'),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 
   void _startPaymentProcess(StateSetter setModalState) async {
+    _activeModalSetState = setModalState;
     setModalState(() => _isProcessing = true);
 
-    // 1. Create order on backend
-    String? orderId = await _apiService.createRazorpayOrder(widget.campaignId, _selectedAmount);
-
-    if (orderId == null) {
-      setModalState(() => _isProcessing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not initiate payment. Try again.'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    // 2. Open Razorpay Checkout
-    var options = {
-      'key': 'rzp_test_T1pupuewW0vIvQ', // Test Key
-      'amount': (_selectedAmount * 100).toInt(),
-      'name': 'Army Trust',
-      'order_id': orderId,
-      'description': 'Donation for ${widget.title}',
-      'timeout': 120, // in seconds
-      'prefill': {
-        'contact': '9876543210',
-        'email': 'test@razorpay.com'
-      }
-    };
-
     try {
-      _razorpay.open(options);
+      // 1. Create order on backend
+      final orderData = await _apiService.createCashfreeOrder(widget.campaignId, _selectedAmount);
+
+      if (orderData == null || orderData['payment_session_id'] == null) {
+        setModalState(() => _isProcessing = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not initiate payment. Try again.'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+
+      final String orderId = orderData['order_id'] ?? orderData['id'] ?? '';
+      final String paymentSessionId = orderData['payment_session_id'] ?? '';
+      _currentOrderId = orderId;
+
+      var session = CFSessionBuilder()
+          .setEnvironment(CFEnvironment.SANDBOX)
+          .setOrderId(orderId)
+          .setPaymentSessionId(paymentSessionId)
+          .build();
+
+      var cfWebCheckoutPayment = CFWebCheckoutPaymentBuilder()
+          .setSession(session)
+          .build();
+
+      _cfPaymentGatewayService.doPayment(cfWebCheckoutPayment);
     } catch (e) {
       setModalState(() => _isProcessing = false);
-      print('Razorpay Error: $e');
+      print('Cashfree Error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment error: ${e.toString()}'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -225,7 +225,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                       height: 230,
                       child: TabBarView(
                         children: [
-                          // ── Tab 1: Razorpay ──
+                          // ── Tab 1: Cashfree ──
                           Padding(
                             padding: const EdgeInsets.all(24.0),
                             child: Column(
@@ -290,7 +290,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                             child: CircularProgressIndicator(
                                                 color: Colors.white, strokeWidth: 2))
                                         : Text(
-                                            'Pay ₹${_selectedAmount.toInt()} via Razorpay',
+                                            'Pay ₹${_selectedAmount.toInt()} via Cashfree',
                                             style: const TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,

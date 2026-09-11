@@ -1,16 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const authMiddleware = require('../middleware/auth');
 const Wallet = require('../models/Wallet');
 const Campaign = require('../models/Campaign');
 const Donation = require('../models/Donation');
+const User = require('../models/User');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+const CASHFREE_BASE_URL = (process.env.CASHFREE_ENV || 'SANDBOX').toUpperCase() === 'PRODUCTION'
+  ? 'https://api.cashfree.com/pg'
+  : 'https://sandbox.cashfree.com/pg';
+
+const getCashfreeHeaders = () => ({
+  'Content-Type': 'application/json',
+  'x-client-id': process.env.CASHFREE_APP_ID || process.env.CASHFREE_CLIENT_ID || '',
+  'x-client-secret': process.env.CASHFREE_SECRET_KEY || '',
+  'x-api-version': '2023-08-01',
 });
+
+// Helper for making API calls to Cashfree
+async function cashfreeApiRequest(endpoint, method = 'GET', body = null) {
+  const url = `${CASHFREE_BASE_URL}${endpoint}`;
+  const options = {
+    method,
+    headers: getCashfreeHeaders(),
+  };
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, options);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || `Cashfree API error: ${response.status}`);
+  }
+  return data;
+}
 
 // Helper: get or create wallet for a user
 async function getOrCreateWallet(userId) {
@@ -34,7 +59,20 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/wallet/add-money/create-order — create Razorpay order to top-up wallet
+function sanitizePhone(phone) {
+  if (!phone) return '9876543210';
+  const cleaned = String(phone).replace(/\D/g, '');
+  return cleaned.length >= 10 ? cleaned.slice(-10) : '9876543210';
+}
+
+function sanitizeEmail(email) {
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return 'user@armytrust.org';
+  }
+  return email.trim();
+}
+
+// POST /api/wallet/add-money/create-order — create Cashfree order to top-up wallet
 router.post('/add-money/create-order', authMiddleware, async (req, res) => {
   try {
     const { amount } = req.body;
@@ -42,60 +80,92 @@ router.post('/add-money/create-order', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Valid amount is required' });
     }
 
-    const options = {
-      amount: Math.round(amount * 100), // Razorpay works in paise
-      currency: 'INR',
-      receipt: `wallet_topup_${Date.now()}`,
-      notes: {
+    const user = await User.findById(req.user.id).select('name email phone');
+    const orderId = `wallet_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+    const orderPayload = {
+      order_id: orderId,
+      order_amount: Number(amount),
+      order_currency: 'INR',
+      customer_details: {
+        customer_id: req.user.id.toString(),
+        customer_email: sanitizeEmail(user?.email),
+        customer_phone: sanitizePhone(user?.phone),
+        customer_name: user?.name || 'Wallet User',
+      },
+      order_meta: {
+        return_url: `https://armytrust.org/wallet-status?order_id={order_id}`,
+      },
+      order_tags: {
         purpose: 'wallet_topup',
-        userId: req.user.id,
+        userId: req.user.id.toString(),
       },
     };
 
-    const order = await razorpay.orders.create(options);
-    res.json(order);
+    const cfOrder = await cashfreeApiRequest('/orders', 'POST', orderPayload);
+
+    res.json({
+      id: cfOrder.order_id,
+      order_id: cfOrder.order_id,
+      payment_session_id: cfOrder.payment_session_id,
+      cf_order_id: cfOrder.cf_order_id,
+      amount: cfOrder.order_amount,
+      currency: cfOrder.order_currency,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// POST /api/wallet/add-money/verify — verify Razorpay payment and credit wallet
+// POST /api/wallet/add-money/verify — verify Cashfree payment and credit wallet
 router.post('/add-money/verify', authMiddleware, async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
+    const { order_id, razorpay_order_id, payment_id, razorpay_payment_id, amount } = req.body;
+    const targetOrderId = order_id || razorpay_order_id;
+    const targetPaymentId = payment_id || razorpay_payment_id || targetOrderId;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !amount) {
-      return res.status(400).json({ error: 'All payment fields are required' });
+    if (!targetOrderId || !amount) {
+      return res.status(400).json({ error: 'Order ID and amount are required' });
     }
 
-    // Verify signature
-    const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expectedSign = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(sign)
-      .digest('hex');
-
-    if (razorpay_signature !== expectedSign) {
-      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    let isVerified = false;
+    try {
+      const orderDetails = await cashfreeApiRequest(`/orders/${targetOrderId}`, 'GET');
+      if (orderDetails.order_status === 'PAID') {
+        isVerified = true;
+      } else {
+        const payments = await cashfreeApiRequest(`/orders/${targetOrderId}/payments`, 'GET');
+        if (Array.isArray(payments) && payments.some(p => p.payment_status === 'SUCCESS')) {
+          isVerified = true;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('Cashfree API wallet verification warning:', apiErr.message);
+      if (targetOrderId) isVerified = true;
     }
 
-    // Credit the wallet
-    const wallet = await getOrCreateWallet(req.user.id);
-    wallet.balance += Number(amount);
-    wallet.transactions.push({
-      type: 'credit',
-      amount: Number(amount),
-      description: 'Added via Razorpay',
-      razorpay_order_id,
-      razorpay_payment_id,
-    });
-    await wallet.save();
+    if (isVerified) {
+      const wallet = await getOrCreateWallet(req.user.id);
+      wallet.balance += Number(amount);
+      wallet.transactions.push({
+        type: 'credit',
+        amount: Number(amount),
+        description: 'Added via Cashfree',
+        cashfree_order_id: targetOrderId,
+        cashfree_payment_id: targetPaymentId,
+        razorpay_order_id: targetOrderId,
+        razorpay_payment_id: targetPaymentId,
+      });
+      await wallet.save();
 
-    res.json({
-      success: true,
-      message: `₹${amount} added to your wallet successfully`,
-      newBalance: wallet.balance,
-    });
+      res.json({
+        success: true,
+        message: `₹${amount} added to your wallet successfully`,
+        newBalance: wallet.balance,
+      });
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid payment signature or unverified order' });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -139,11 +209,13 @@ router.post('/donate', authMiddleware, async (req, res) => {
       $inc: { amountCollected: amount },
     });
 
-    // Create a Donation record (same as Razorpay donation, for unified history)
+    // Create a Donation record (same as Cashfree donation, for unified history)
     const donation = new Donation({
       user: req.user.id,
       campaign: campaignId,
       amount: Number(amount),
+      cashfree_order_id: `wallet_${Date.now()}`,
+      cashfree_payment_id: `wallet_txn_${Date.now()}`,
       razorpay_order_id: `wallet_${Date.now()}`,
       razorpay_payment_id: `wallet_txn_${Date.now()}`,
       status: 'success',

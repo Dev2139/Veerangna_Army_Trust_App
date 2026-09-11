@@ -114,7 +114,7 @@ class _DonationSuccessScreenState extends State<DonationSuccessScreen> {
       "• *Amount Paid:* ₹${widget.amount} ($amountWords)\n"
       "• *Transaction ID:* $txId\n"
       "• *Date:* $formattedDate\n"
-      "• *Payment Status:* Success (Razorpay)\n\n"
+      "• *Payment Status:* Success (Cashfree)\n\n"
       "*Donor Details:*\n"
       "• *PAN Number:* $panText\n"
       "• *Mobile No:* $phoneText\n"
@@ -408,7 +408,7 @@ class _DonationSuccessScreenState extends State<DonationSuccessScreen> {
                             _buildTableRow('Amount', 'Rs. ${widget.amount} ($amountWords)'),
                             _buildTableRow('Financial Year', '2026-2027'),
                             _buildTableRow('Section', 'Section 80G(5)(vi)'),
-                            _buildTableRow('Payment Mode', 'Online (UPI/Razorpay)'),
+                            _buildTableRow('Payment Mode', 'Online (UPI/Cashfree)'),
                             _buildTableRow('Transaction No.', txId),
                           ],
                         ),

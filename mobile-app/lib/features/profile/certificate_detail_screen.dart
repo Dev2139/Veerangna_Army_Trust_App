@@ -433,7 +433,7 @@ class _CertificateDetailScreenState extends State<CertificateDetailScreen> {
               _buildTableRow('Amount', 'Rs. $amount ($amountWords)'),
               _buildTableRow('Financial Year', '2026-2027'),
               _buildTableRow('Section', 'Section 80G(5)(vi)'),
-              _buildTableRow('Payment Mode', 'Online (UPI/Razorpay)'),
+              _buildTableRow('Payment Mode', 'Online (UPI/Cashfree)'),
               _buildTableRow('Transaction No.', txId),
             ],
           ),
