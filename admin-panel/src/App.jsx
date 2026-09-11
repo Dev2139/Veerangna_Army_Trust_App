@@ -8,6 +8,7 @@ import GalleryManagement from './pages/GalleryManagement';
 import FoodGalleryManagement from './pages/FoodGalleryManagement';
 import BannersManagement from './pages/BannersManagement';
 import DonationsManagement from './pages/DonationsManagement';
+import UsersManagement from './pages/UsersManagement';
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
               <Route path="/food-gallery" element={<FoodGalleryManagement />} />
               <Route path="/banners" element={<BannersManagement />} />
               <Route path="/donations" element={<DonationsManagement />} />
-              <Route path="/users" element={<div className="text-2xl font-bold">Users Management (WIP)</div>} />
+              <Route path="/users" element={<UsersManagement />} />
             </Routes>
           </main>
         </div>

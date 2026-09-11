@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : 'https://veerangna-army-trust-app.vercel.app/api');
+
 const api = axios.create({
-  baseURL: 'https://veerangna-army-trust-app.vercel.app/api',
+  baseURL: API_URL,
 });
 
 // Interceptor to add token if exists
